@@ -10,8 +10,7 @@ Redshift is the distributed data warehousing solution by AWS. The redshift monit
 ## Redeye Overview
 The tool gathers the following metrics on redshift performance:
 
-1. Hardware Metrics: 
-
+1. Hardware Metrics:  
 	a. CPU Utilization
 	b. Disk Space Utilization
 	c. Read/Write IOPs
@@ -19,14 +18,13 @@ The tool gathers the following metrics on redshift performance:
 	e. Write Latency/Throughput
 	f. Network Transmit/Throughput
 
-2. Software Metrics: 
-
-	a. Aggregate Metrics:
-		i. Queries fired by user
-		ii. Queries in Queue/Running/Returning State in each queue
-		iii. Average time taken in Queue/Running/Returning State in each queue
-	b. Query Level Metrics: Number of diskhits, Number of rows broadcast across nodes, queue used and user at a query_id granularity
-	c. Table Level Metrics: Least and most used tables in warehouse
+2. Software Metrics:  
+	a. Aggregate Metrics:  
+		i. Queries fired by user  
+		ii. Queries in Queue/Running/Returning State in each queue  
+		iii. Average time taken in Queue/Running/Returning State in each queue  
+	b. Query Level Metrics: Number of diskhits, Number of rows broadcast across nodes, queue used and user at a query_id granularity  
+	c. Table Level Metrics: Least and most used tables in warehouse  
 
 # Requirements:
 For this tool to work, you will need:
