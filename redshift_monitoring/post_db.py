@@ -57,7 +57,6 @@ class PostDB():
 					r = self.post_opentsdb(payload[key])
 				elif key == 'mysql':
 					self.post_mysql(payload[key])
-					print 'Done with this'
 				elif key == 'statsd':
 					self.post_statsd(payload[key])
 
@@ -78,7 +77,6 @@ class PostDB():
 				table_rows_list = payload[key]
 				for row in table_rows_list:
 					table_rows_dict = table_rows_list[row]
-					print table_rows_dict
 					if self.session.query(self.RSQueryMonitor).filter(self.RSQueryMonitor.query_id == table_rows_dict['query_id']).count() == 0:
 						self.session.add(self.RSQueryMonitor(query_id=table_rows_dict['query_id'],username=table_rows_dict['username'].strip(),
 							workmem=table_rows_dict['workmem'], num_diskhits=table_rows_dict['num_diskhits'], exec_time=table_rows_dict['exec_time'],
@@ -149,7 +147,6 @@ class PostDB():
 				table_rows_list = payload[key]
 				for row in table_rows_list:
 					table_rows_dict = table_rows_list[row]
-					print table_rows_dict
 					if self.session.query(self.RSQueryScan).filter(and_(RSQueryScan.query_id == table_rows_dict['query_id'],self.RSQueryScan.tablename == table_rows_dict['tablename'].strip(), self.RSQueryScan.queue == table_rows_dict['queue'])):
 						self.session.add(self.RSQueryScan(query_id=table_rows_dict['query_id'],queue=table_rows_dict['queue'],tablename=table_rows_dict['tablename'].strip(),
 							query_start_time=table_rows_dict['query_start_time'], range_scan_pct=table_rows_dict['range_scan_pct'], rows_scan=table_rows_dict['rows_scan'],

@@ -41,39 +41,27 @@ def run(thread_num,query_result_queue,db_queue,stop_thread,config_dict):
 	payload = {}
 
 	while (not stop_thread.is_set()):
-
 		payload = {}
 		payload_opentsdb = []
 		payload_statsd = []
 
-		df_response = thread_read.read_query_result(thread_num=thread_num,query_result_queue=query_result_queue,metric_name=metric_name,query_name='query2')
-		compute_metric = ComputeMetric(thread_num=thread_num,df_response=df_response)
-
-		running_query_count, metric_name = compute_metric.running_query_count()
-		payload_opentsdb.extend(thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=running_query_count,tag_name='service_class'))
-		payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=running_query_count,tag_name='service_class'))
-
-		queued_query_count, metric_name = compute_metric.queued_query_count()
-		payload_opentsdb.extend(thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=queued_query_count,tag_name='service_class'))
-		payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=queued_query_count,tag_name='service_class'))
-
-		returning_query_count, metric_name = compute_metric.returning_query_count()
-		payload_opentsdb.extend(thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=returning_query_count,tag_name='service_class'))
-		payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=returning_query_count,tag_name='service_class'))
-
-		running_query_avg_time, metric_name = compute_metric.running_query_avg_time()
-		payload_opentsdb.extend(thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=running_query_avg_time,tag_name='service_class'))
-		payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=running_query_avg_time,tag_name='service_class'))
-
-		queued_query_avg_time, metric_name = compute_metric.queued_query_avg_time()
-		payload_opentsdb.extend(thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=queued_query_avg_time,tag_name='service_class'))
-		payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=queued_query_avg_time,tag_name='service_class'))
-
-		returning_query_avg_time, metric_name = compute_metric.returning_query_avg_time()
-		payload_opentsdb.extend(thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=returning_query_avg_time,tag_name='service_class'))
-		payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=returning_query_avg_time,tag_name='service_class'))
-
-		payload['opentsdb'] = payload_opentsdb
-		payload['statsd'] = payload_statsd
-
+		df_response, error = thread_read.read_query_result(thread_num=thread_num,query_result_queue=query_result_queue,metric_name=metric_name,query_name='query2')
+		if error == -1:
+			print 'Something broke. Skip this run of %s' %(metric_name)
+		else:
+			compute_metric = ComputeMetric(thread_num=thread_num,df_response=df_response)
+			running_query_count, metric_name = compute_metric.running_query_count()
+			payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=running_query_count,tag_name='service_class'))
+			queued_query_count, metric_name = compute_metric.queued_query_count()
+			payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=queued_query_count,tag_name='service_class'))
+			returning_query_count, metric_name = compute_metric.returning_query_count()
+			payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=returning_query_count,tag_name='service_class'))
+			running_query_avg_time, metric_name = compute_metric.running_query_avg_time()
+			payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=running_query_avg_time,tag_name='service_class'))
+			queued_query_avg_time, metric_name = compute_metric.queued_query_avg_time()
+			payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=queued_query_avg_time,tag_name='service_class'))
+			returning_query_avg_time, metric_name = compute_metric.returning_query_avg_time()
+			payload_opentsdb.extend(thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=returning_query_avg_time,tag_name='service_class'))
+			payload_statsd.extend(thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=returning_query_avg_time,tag_name='service_class'))
+			payload['statsd'] = payload_statsd
 		thread_write.write_payload(payload=payload,db_queue=db_queue)

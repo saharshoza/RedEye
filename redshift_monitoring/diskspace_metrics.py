@@ -21,10 +21,12 @@ def run(thread_num,query_result_queue,db_queue,stop_thread,config_dict):
 	thread_write = ThreadWrite(config_dict['general']['cluster_name'])
 
 	while (not stop_thread.is_set()):
-
 		payload = {}
-		df_response = thread_read.read_query_result(thread_num=thread_num,query_result_queue=query_result_queue,metric_name=metric_name,query_name='query4')
-		metric_dictionary = compute_metric(thread_num=thread_num,df_response=df_response,total_disk_space_mb=config_dict['diskspace_metrics']['total_disk_space_mb'])
-		payload['opentsdb'] = thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=metric_dictionary,tag_name='schema')
-		payload['statsd'] = thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=metric_dictionary,tag_name='schema')
+		df_response, error = thread_read.read_query_result(thread_num=thread_num,query_result_queue=query_result_queue,metric_name=metric_name,query_name='query4')
+		if error == -1:
+			print 'Something broke. Skip this run of %s' %(metric_name)
+		else:
+			metric_dictionary = compute_metric(thread_num=thread_num,df_response=df_response,total_disk_space_mb=config_dict['diskspace_metrics']['total_disk_space_mb'])
+			payload['opentsdb'] = thread_write.get_payload(db='opentsdb',metric_name=metric_name,metric_dictionary=metric_dictionary,tag_name='schema')
+			payload['statsd'] = thread_write.get_payload(db='statsd',metric_name=metric_name,metric_dictionary=metric_dictionary,tag_name='schema')
 		thread_write.write_payload(payload=payload,db_queue=db_queue)

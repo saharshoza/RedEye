@@ -87,15 +87,15 @@ class CloudWatchMetrics():
 				else:
 					self.post_db.post_statsd([{'redshift.'+response[i]['Label']+str('.')+str(node)+'.'+self.cluster_name : response[i]['Datapoints'][0][self.statistics[0]]}])
 					#statsd.gauge('redshift.'+response[i]['Label']+str('.')+str(node), response[i]['Datapoints'][0][self.statistics[0]])
-					json_opentsdb['metric'] = str('redshift.')+response[i]['Label']
-					json_opentsdb['timestamp'] = int(time.time())
-					json_opentsdb['value'] = response[i]['Datapoints'][0][self.statistics[0]]
-					tags['Node'] = node
-					json_opentsdb['tags'] = tags
+					#json_opentsdb['metric'] = str('redshift.')+response[i]['Label']
+					#json_opentsdb['timestamp'] = int(time.time())
+					#json_opentsdb['value'] = response[i]['Datapoints'][0][self.statistics[0]]
+					#tags['Node'] = node
+					#json_opentsdb['tags'] = tags
 					
-					logging.info('%s : JSON posted is %s', self.log_identifier, json_opentsdb)
-					print '%s : JSON posted is %s' %(self.log_identifier, json_opentsdb)
-					self.post_db.post_opentsdb(json_opentsdb)
+					#logging.info('%s : JSON posted is %s', self.log_identifier, json_opentsdb)
+					#print '%s : JSON posted is %s' %(self.log_identifier, json_opentsdb)
+					#self.post_db.post_opentsdb(json_opentsdb)
 					#r = requests.post(url,data=json.dumps(json_opentsdb))
 					#logging.info('%s : HTTP Response is %s', self.log_identifier, r)
 					#print '%s : HTTP Response is %s' %(self.log_identifier, r)

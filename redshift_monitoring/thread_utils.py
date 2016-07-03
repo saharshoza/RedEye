@@ -7,11 +7,25 @@ class ThreadRead():
 	## Read redshift query in query queue
 	def read_query_result(self,thread_num,query_result_queue,metric_name,query_name):
 		logging.info('%s : %d thread : waiting for result from redshift in %s' , 'system_tables', thread_num, metric_name)
-		df_response = query_result_queue.get()[query_name]	
-		logging.info('%s : %d thread : obtained df_response for %s' , 'system_tables', thread_num, metric_name)	
-		print '%s : %d thread : obtained df_response for %s' %('system_tables',thread_num, metric_name)
+
+		try:
+			df_packet = query_result_queue.get()
+			#print '%d thread: Inside thread read' %(thread_num)
+			key_list = []
+			for key in df_packet:
+				key_list.append(key)
+			print '%d thread: %s' %(thread_num,key_list)
+			df_response = df_packet[query_name]
+			error = 0
+			logging.info('%s : %d thread : obtained df_response for %s and %s' , 'system_tables', thread_num, metric_name, query_name)
+			print '%s : %d thread : obtained df_response for %s' %('system_tables',thread_num, metric_name)	
+		except:
+			df_response = None
+			error = -1
+			print '%s : %d thread : The thread read failed. Most likely cause is %s timed out' %('system_tables',thread_num, query_name)
+			pass
 		query_result_queue.task_done()
-		return df_response
+		return df_response, error
 
 class ThreadWrite():
 
