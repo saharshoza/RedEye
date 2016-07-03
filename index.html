@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Redshift monitoring by saharshoza</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Redshift monitoring</h1>
+      <h2 class="project-tagline">Utility to monitor hardware and software metrics of redshift. Time Series Data is plotted on OpenTSDB and Statsd. Query and table level metrics are stored in MySQL</h2>
+      <a href="https://github.com/saharshoza/redshift_monitoring" class="btn">View on GitHub</a>
+      <a href="https://github.com/saharshoza/redshift_monitoring/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/saharshoza/redshift_monitoring/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <p>I got an opportunity to work extensively with redshift as part of the BI team in <a href="http://www.myntra.com/">Myntra</a>. <a href="http://docs.aws.amazon.com/redshift/latest/mgmt/welcome.html">Redshift</a> powered the core ETL/ELT logic and enabled business users to query on the data through applications built on top of it. While there were multiple benefits of using Redshift (‘out-of-box’ solution, minimal maintenance of cluster, ability to focus on business logic), there was a downside - it was difficult to debug performance issues.</p>
+
+<h1>
+<a id="a-bit-of-background" class="anchor" href="#a-bit-of-background" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A bit of background</h1>
+
+<p>Key reporting requirements are serviced from ETL refreshes of the data warehouse. Delays in this processing results in delayed/incorrect reports on key metrics. Slow execution of adhoc queries hamper the ability to take swift business decisions. The root cause of the poor performance is quite often a combination of multiple factors - poorly written adhoc queries, a spike in queries from specific users, concurrent execution of resource intensive ETL’s etc.</p>
+
+<h1>
+<a id="motivation" class="anchor" href="#motivation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motivation</h1>
+
+<p>In order to identify the bottleneck(s) we needed  to be able to quantify each metric that impacts system performance. The <a href="http://docs.aws.amazon.com/redshift/latest/mgmt/metrics-listing.html">AWS cloudwatch</a> service displays hardware metrics like CPU, disk space, read/write IOPS/latency and throughput along with a query dashboard and serves a great starting point. There is also great <a href="http://docs.aws.amazon.com/redshift/latest/dg/c-optimizing-query-performance.html">documentation</a> on how to best tune redshift queries. However, it fails to capture aggregate trends in query patterns that become critical in detecting anomalies in the redshift cluster. </p>
+
+<p><a href="https://github.com/saharshoza/redshift_monitoring">RedEye</a> is a tool that presents this and a variety of other data points to help debug performance issues with ease. It relies on Statsd for storing time series data and MySQL for query/table level data. Hardware metrics are gathered from the AWS Cloudwatch service and individual/aggregate query metrics are obtained by querying system tables in redshift. A working instance of <a href="https://www.datadoghq.com/blog/statsd/">Statsd</a> and MySQL are necessary for this tool to operate.</p>
+
+<h1>
+<a id="lets-infer" class="anchor" href="#lets-infer" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Let's infer</h1>
+
+<p>The code can be found <a href="https://github.com/saharshoza/redshift_monitoring">here</a>. A few snapshots of the dashboard can be seen here.</p>
+
+<p>I will attempt to illustrate some of the insights that we were able to derive from this unified dashboard . Given that the cluster is experiencing poor performance, the following are the combination of observations that could help identify the root cause of specific performance issues.</p>
+
+<h2>
+<a id="too-many-of-them" class="anchor" href="#too-many-of-them" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Too many of them</h2>
+
+<p>The most common cause could be an unusually high number of queries from a single user. Our in house querying application allows users to schedule queries on redshift. Hence it is usual to see peaks from specific users on the database in certain time windows. RedEye displays a count of queries by user and makes it easy to spot an unusually high number of queries from a specific user. This information is obtained from <a href="http://docs.aws.amazon.com/redshift/latest/dg/r_STV_RECENTS.html"><code>stv_recents</code></a>. There's a lot more queries fired by the user in yellow on 27th of that month.</p>
+
+<p><img src="https://raw.githubusercontent.com/saharshoza/redshift_monitoring/image/images/DDP%20User%20Spike%20RedEye.png" alt=""></p>
+
+<h2>
+<a id="waiting" class="anchor" href="#waiting" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Waiting...</h2>
+
+<p>A consequence of having too many queries from a single user is high number of queued queries. To evaluate if that indeed is the reason for query 'slowness', the dashboard displays the count of queries by in each state (Queued/Running/Returning) for every service class (queue) in Redshift. The graph makes it easy to judge if service class is being under utilised or over burdened. The <a href="http://docs.aws.amazon.com/redshift/latest/dg/r_STV_WLM_QUERY_STATE.html"><code>stv_wlm_query_state</code></a> table is used to gather all service class metrics. The number of queries queued in blue are significantly higher than the same in red. </p>
+
+<p><img src="https://raw.githubusercontent.com/saharshoza/redshift_monitoring/image/images/WLMState%20RedEye.png" alt=""></p>
+
+<h2>
+<a id="for-how-long-though" class="anchor" href="#for-how-long-though" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>For how long though?</h2>
+
+<p>A spike in the number of queries will certainly increase the number of queued queries but it need not be a result of 'slowness'. An important metric to track would be the average queue/running/returning time in each queue. My 2 biggest takeaways: </p>
+
+<p>First, a spike in query count by a user that does not translate to high average time in any of the states is probably not a cause of concern. This could be due to aggregate queries (count(*), sum(), avg() grouped over few columns and pulling very fewer rows). The spike in queries fired by the user in magenta reflects on the count of queries queued in its service class but does not translate to higher queue time.</p>
+
+<p><img src="https://raw.githubusercontent.com/saharshoza/redshift_monitoring/image/images/Datascience%20Fired%20RedEye.png" alt=""></p>
+
+<p><img src="https://raw.githubusercontent.com/saharshoza/redshift_monitoring/image/images/Datascience%20Queue%20RedEye.png" alt=""></p>
+
+<p><img src="https://raw.githubusercontent.com/saharshoza/redshift_monitoring/image/images/Unchanged%20Queue%20Time%20RedEye.png" alt=""></p>
+
+<p>Second, an interesting observation is the impact that returning queries can have on performance. Specifically, queries that return large volumes of data (~100k rows) typically have 10x the average time when in the returning state than the queued/running state. This observation reinforces conventional wisdom of limiting the number of queries pulling many rows from redshift. The count of returning queries is consistently negligible compared to running and queued queries, yet the average time taken for queries in the returning state is always higher. (The average returning time is an average of Running+Returning. But even discounting that, the time taken in just returning is very high.)</p>
+
+<p><img src="https://raw.githubusercontent.com/saharshoza/redshift_monitoring/image/images/Returning%20Query%20Count%20RedEye.png" alt=""></p>
+
+<p><img src="https://raw.githubusercontent.com/saharshoza/redshift_monitoring/image/images/Returning%20Query%20Time%20RedEye.png" alt=""></p>
+
+<h2>
+<a id="summon-the-culprit-query" class="anchor" href="#summon-the-culprit-query" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Summon the culprit query</h2>
+
+<p>Graphs are great in doing a quick high level 'analysis' of the situation. But to take action, you would need to know which query/queries is/are really slowing down everything. Identification of a 'bad' query is not straightforward and far from accurate. RedEye relies on 2 key proxies that could be good indicators toward bad query performance - number of diskhits and number of broadcast rows. A variety of query level data (service class, username, queue time, execution time, slot count) are stored in MySql along with these 2. The following query can be used to identify such queries. </p>
+
+<p><code>SELECT username, query_id 
+FROM &lt;monitoring_schema&gt;.redshift_query_monitory_&lt;cluster_name&gt; 
+WHERE state = ‘Running’ 
+AND (num_diskhits &gt; 0 OR bcast_rows &gt; &lt;bcast_threshold&gt;;</code> </p>
+
+<p>An aggressive approach could be to cancel queries from adhoc users automatically if they show up in the result of the above query. </p>
+
+<p><code>CANCEL &lt;query_id&gt;</code></p>
+
+<h2>
+<a id="a-peculiar-case" class="anchor" href="#a-peculiar-case" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A peculiar Case</h2>
+
+<p>There were certain times when this poor performance was attributed to reasons other than the ones mentioned above. In the absence of an anomalous spike in any of the dashboards, performance would still be poor. Specifically, a query would be submitted to redshift, but no corresponding query_id would be generated by it in <code>stl_querytext</code> for upto 5 minutes. This would typically be accompanied by the following 2 observations on the dashboard.  </p>
+
+<ol>
+<li>CPU Utilisation: The redshift cluster is composed of a leader node and multiple compute nodes. Under normal execution, the CPU utilisation of the compute nodes is significantly lower than that of the compute nodes. However, when redshift fails to assign a query_id for the query in <code>stl_querytext</code>, the CPU utilisation of the leader node spikes. This happens since the leader node is tasked with generating the explain plan for the query. Explain plan generation must happen before the query is assigned an ID or even queued.<br>
+</li>
+<li>Disk Space: More often than not, this spike is correlated with a spike in disk space. Closer inspection of the <code>stv_recents</code> shows that multiple temp tables prefixed with <code>volt</code> are created in order to generate the explain plan, hence resulting in a spike in disk space.<br>
+<code>SELECT COUNT(*)  
+FROM stv_recents
+WHERE status = 'Running'  
+AND query LIKE ('%volt%');</code>
+</li>
+</ol>
+
+<p>The actual offending query has no query ID assigned and <code>stv_recents</code> will only show the queries fired to generate its explain plan. The PID returned by the table for those queries can be used to terminate it as <code>pg_terminate_backend (pid)</code> </p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/saharshoza/redshift_monitoring">Redshift monitoring</a> is maintained by <a href="https://github.com/saharshoza">saharshoza</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
