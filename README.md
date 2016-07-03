@@ -39,13 +39,23 @@ For this tool to work, you will need:
 # Quick Setup
 
 `vim $REDYEYE/redshift_monitoring/base_config.py`   
+
+
 This file contains configuration properties common to all the clusters. Edit the statsd, opentsdb and mysql endpoints here.  
+
+
 `mkdir $REDEYE/cluster_new`  
 `cp $REDEYE/cluster_dir/config.py $REDEYE/cluster_new/`  
 `vim $REDEYE/cluster_new/config.py`  
+
+
 This file will contain configuration specific to your redshift console. Change the credentials to point to your cluster. You should provide username and password that can access the redshift system tables.  
+
+
 `cp $REDEYE/cluster_dir/start_monitoring.py $REDEYE/cluster_new/`  
 
+
 `python $REDEYE/cluster_new/start_monitoring.py`  
+
 
 The tool has been designed to run for an hour. It can be scheduled as part of a workflow scheduler like Azkaban to keep the monitoring persistent.
