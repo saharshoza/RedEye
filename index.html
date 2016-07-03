@@ -76,16 +76,20 @@
 <h2>
 <a id="summon-the-culprit-query" class="anchor" href="#summon-the-culprit-query" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Summon the culprit query</h2>
 
-<p>Graphs are great in doing a quick high level 'analysis' of the situation. But to take action, you would need to know which query/queries is/are really slowing down everything. Identification of a 'bad' query is not straightforward and far from accurate. RedEye relies on 2 key proxies that could be good indicators toward bad query performance - number of diskhits and number of broadcast rows. A variety of query level data (service class, username, queue time, execution time, slot count) are stored in MySql along with these 2. The following query can be used to identify such queries. </p>
+<p>Graphs are great in doing a quick high level 'analysis' of the situation. But to take action, you would need to know which query/queries is/are really slowing down everything. Identification of a 'bad' query is not straightforward and far from accurate. RedEye relies on 2 key proxies that could be good indicators toward bad query performance - number of diskhits and number of broadcast rows. A variety of query level metrics (service class, username, queue time, execution time, slot count) are stored in MySql along with these 2. The following query can be used to identify such queries. The monitoring_schema and cluster_name would be config parameters. </p>
 
-<p><code>SELECT username, query_id 
-FROM &lt;monitoring_schema&gt;.redshift_query_monitory_&lt;cluster_name&gt; 
-WHERE state = ‘Running’ 
+<p><code>SELECT username, query_id  
+FROM &lt;monitoring_schema&gt;.redshift_query_monitory_&lt;cluster_name&gt;  
+WHERE state = ‘Running’   
 AND (num_diskhits &gt; 0 OR bcast_rows &gt; &lt;bcast_threshold&gt;;</code> </p>
 
 <p>An aggressive approach could be to cancel queries from adhoc users automatically if they show up in the result of the above query. </p>
 
 <p><code>CANCEL &lt;query_id&gt;</code></p>
+
+<p>A sudden rise in disk space utilisation is a result of such queries resulting in plots similar to what we see below.</p>
+
+<p><img src="https://raw.githubusercontent.com/saharshoza/redshift_monitoring/image/images/Disk%20Space%20Spike%20RedEye.png" alt=""></p>
 
 <h2>
 <a id="a-peculiar-case" class="anchor" href="#a-peculiar-case" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A peculiar Case</h2>
@@ -95,13 +99,16 @@ AND (num_diskhits &gt; 0 OR bcast_rows &gt; &lt;bcast_threshold&gt;;</code> </p>
 <ol>
 <li>CPU Utilisation: The redshift cluster is composed of a leader node and multiple compute nodes. Under normal execution, the CPU utilisation of the compute nodes is significantly lower than that of the compute nodes. However, when redshift fails to assign a query_id for the query in <code>stl_querytext</code>, the CPU utilisation of the leader node spikes. This happens since the leader node is tasked with generating the explain plan for the query. Explain plan generation must happen before the query is assigned an ID or even queued.<br>
 </li>
-<li>Disk Space: More often than not, this spike is correlated with a spike in disk space. Closer inspection of the <code>stv_recents</code> shows that multiple temp tables prefixed with <code>volt</code> are created in order to generate the explain plan, hence resulting in a spike in disk space.<br>
-<code>SELECT COUNT(*)  
-FROM stv_recents
-WHERE status = 'Running'  
-AND query LIKE ('%volt%');</code>
+<li>Temp Table Creation: <code>stv_recents</code> shows that multiple temp tables prefixed with <code>volt</code> are created in order to generate the explain plan, hence resulting in a spike in disk space.<br>
 </li>
 </ol>
+
+<p></p>
+<code>SELECT COUNT(*)   
+FROM stv_recents  
+WHERE status = 'Running'   
+AND query LIKE ('%volt%');</code>
+
 
 <p>The actual offending query has no query ID assigned and <code>stv_recents</code> will only show the queries fired to generate its explain plan. The PID returned by the table for those queries can be used to terminate it as <code>pg_terminate_backend (pid)</code> </p>
 
