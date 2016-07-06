@@ -26,7 +26,7 @@ The tool gathers the following metrics on redshift performance:
 	b. Query Level Metrics: Number of diskhits, Number of rows broadcast across nodes, queue used and user at a query_id granularity  
 	c. Table Level Metrics: Least and most used tables in warehouse  
 
-There is a short [post](http://saharshoza.github.io/redshift_monitoring/) highlighting some of the insights that can be gained from this utility.
+There is a short [post](http://saharshoza.github.io/RedEye/) highlighting some of the insights that can be gained from this utility.
 
 # Requirements:
 For this tool to work, you will need:
