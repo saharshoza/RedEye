@@ -19,24 +19,24 @@
     </section>
 
     <section class="main-content">
-      <p>I got an opportunity to work extensively with redshift as part of the BI team in <a href="http://www.myntra.com/">Myntra</a>. <a href="http://docs.aws.amazon.com/redshift/latest/mgmt/welcome.html">Redshift</a> powered the core ETL/ELT logic and enabled business users to query on the data through applications built on top of it. While there were multiple benefits of using Redshift (‘out-of-box’ solution, minimal maintenance of cluster, ability to focus on business logic), there was a downside - it was difficult to debug performance issues.</p>
+      <p>I got an opportunity to work extensively with redshift as part of the BI team in <a href="http://www.myntra.com/">Myntra</a>. <a href="http://docs.aws.amazon.com/redshift/latest/mgmt/welcome.html">Redshift</a> powered the core data warehousing logic and enabled business users to query on the data through applications built on top of it. While there were multiple benefits of using Redshift (‘out-of-box’ solution, minimal maintenance of cluster, ability to focus on business logic), there was a downside - it was difficult to debug performance issues.</p>
 
 <h1>
 <a id="a-bit-of-background" class="anchor" href="#a-bit-of-background" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A bit of background</h1>
 
-<p>Key reporting requirements are serviced from ETL refreshes of the data warehouse. Delays in this processing results in delayed/incorrect reports on key metrics. Slow execution of adhoc queries hamper the ability to take swift business decisions. The root cause of the poor performance is quite often a combination of multiple factors - poorly written adhoc queries, a spike in queries from specific users, concurrent execution of resource intensive ETL’s etc.</p>
+<p>Key reporting requirements are serviced from ETL refreshes of the data warehouse. Delays in this processing results in delayed/incorrect reports on key metrics. Slow execution of user queries hamper the ability to take swift business decisions. The root cause of the poor performance is quite often a combination of multiple factors - poorly written queries, a spike in queries from specific users, concurrent execution of resource intensive ETL’s etc.</p>
 
 <h1>
 <a id="motivation" class="anchor" href="#motivation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motivation</h1>
 
-<p>In order to identify the bottleneck(s) we needed  to be able to quantify each metric that impacts system performance. The <a href="http://docs.aws.amazon.com/redshift/latest/mgmt/metrics-listing.html">AWS cloudwatch</a> service displays hardware metrics like CPU, disk space, read/write IOPS/latency and throughput along with a query dashboard and serves a great starting point. There is also great <a href="http://docs.aws.amazon.com/redshift/latest/dg/c-optimizing-query-performance.html">documentation</a> on how to best tune redshift queries. However, it fails to capture aggregate trends in query patterns that become critical in detecting anomalies in the redshift cluster. </p>
+<p>In order to identify the bottleneck(s) we needed  to be able to quantify each metric that impacts system performance. The <a href="http://docs.aws.amazon.com/redshift/latest/mgmt/metrics-listing.html">AWS cloudwatch</a> service displays hardware metrics like CPU, disk space, read/write IOPS/latency and throughput along with a query dashboard and serves as a great starting point. However, (after you convince your tech lead to share the company's AWS credentials with you and then wait for a few minutes for the graph to load) it fails to capture aggregate trends in query patterns that become critical in detecting anomalies in the redshift cluster. </p>
 
-<p><a href="https://github.com/saharshoza/redshift_monitoring">RedEye</a> is a tool that presents this and a variety of other data points to help debug performance issues with ease. It relies on Statsd for storing time series data and MySQL for query/table level data. Hardware metrics are gathered from the AWS Cloudwatch service and individual/aggregate query metrics are obtained by querying system tables in redshift. A working instance of <a href="https://www.datadoghq.com/blog/statsd/">Statsd</a> and MySQL are necessary for this tool to operate.</p>
+<p><a href="https://github.com/saharshoza/redshift_monitoring">RedEye</a> is a tool that presents this and a variety of other data points to help debug performance issues with ease. It relies on Statsd for storing time series data and MySQL for query/table level data. Hardware metrics are gathered from the AWS Cloudwatch service and individual/aggregate query metrics are obtained by querying system tables in redshift. A working instance of <a href="https://github.com/etsy/statsd/wiki">Statsd</a> and MySQL are necessary for this tool to operate.</p>
 
 <h1>
 <a id="lets-infer" class="anchor" href="#lets-infer" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Let's infer</h1>
 
-<p>The code can be found <a href="https://github.com/saharshoza/redshift_monitoring">here</a>. A few snapshots of the dashboard can be seen here.</p>
+<p>The code can be found <a href="https://github.com/myntra/redshift_monitoring">here</a>.</p>
 
 <p>I will attempt to illustrate some of the insights that we were able to derive from this unified dashboard . Given that the cluster is experiencing poor performance, the following are the combination of observations that could help identify the root cause of specific performance issues.</p>
 
